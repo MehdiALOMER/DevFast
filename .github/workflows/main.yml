@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Repository'yi klonla
+      # 1. Kod deposunu klonla
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -32,11 +32,11 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
-          distribution: 'zulu'
-          java-version: '17'  # Java 17 kullanılıyor
+          distribution: 'adopt'
+          java-version: '17'
           cache: gradle
 
-      # 5. Android SDK’yı hazırla
+      # 5. Android SDK’yı kur
       - name: Install Android SDK
         uses: android-actions/setup-android@v2
         with:
@@ -52,16 +52,16 @@ jobs:
       - name: Build Android App
         run: |
           cd android
-          chmod +x gradlew  # İzinleri düzelt
-          ./gradlew clean bundleRelease
+          chmod +x gradlew
+          ./gradlew clean assembleRelease
         env:
-          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64  # Doğru JAVA_HOME ayarı
+          JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}  # Java'nın doğru yolu ayarlandı
           ANDROID_HOME: /usr/local/lib/android/sdk
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
       # 8. APK dosyasını kaydet
-      - name: Upload AAB
+      - name: Upload APK
         uses: actions/upload-artifact@v3
         with:
-          name: app-release.aab
-          path: android/app/build/outputs/bundle/release/app-release.aab
+          name: app-release.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
