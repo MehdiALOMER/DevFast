@@ -1,4 +1,16 @@
-distribute:
+name: Deploy To Google Play
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  distribute:
   name: Distribute bundle to Google Play
   needs: test
   runs-on: ubuntu-latest
@@ -49,3 +61,4 @@ distribute:
         track: 'internal'
         status: 'completed'
         whatsNewDirectory: whatsNew/
+
