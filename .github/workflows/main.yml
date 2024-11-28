@@ -40,7 +40,7 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew clean bundleRelease
+          ./gradlew clean bundleRelease --stacktrace --debug
 
       # 5. Release AAB'yi imzala
       - name: Sign Release
