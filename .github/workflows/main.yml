@@ -54,14 +54,14 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew clean bundleRelease
+          ./gradlew clean bundleRelease -Pandroid.injected.signing.store.file=app/release-key.keystore \
+                                        -Pandroid.injected.signing.store.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
+                                        -Pandroid.injected.signing.key.alias=${{ secrets.ANDROID_KEY_ALIAS }} \
+                                        -Pandroid.injected.signing.key.password=${{ secrets.ANDROID_KEY_PASSWORD }}
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
           ANDROID_HOME: /usr/local/lib/android/sdk
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
       # 8. AAB dosyasını kaydet
       - name: Upload AAB
