@@ -1,34 +1,85 @@
-name: Deploy to Google Play
+name: Android CI
 
 on:
   push:
     branches:
-      - main  # Deploy işlemini tetikleyecek branch'ı buraya yaz.
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
+    name: Build and Deploy Android App
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # 1. Repository'yi klonla
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Setup JDK
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'zulu'
-        java-version: '11'
+      # 2. Node.js ortamını kur
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-    - name: Download dependencies
-      run: ./gradlew dependencies
+      # 3. Bağımlılıkları yükle
+      - name: Install dependencies
+        run: npm install
 
-    - name: Build AAB file
-      run: ./gradlew bundleRelease
+      # 4. Java ortamını kur
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
 
-    - name: Upload to Google Play
-      uses: r0adkll/upload-google-play@v1
-      with:
-        serviceAccountJson: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-        packageName: "com.devfast"  # Buraya uygulamanın paket adını yaz.
-        releaseFiles: app/build/outputs/bundle/release/app-release.aab
-        track: internal  # Hangi track'e yüklemek istediğini seç (internal, beta, production).
+      # 5. Android SDK’yı hazırla
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v2
+        with:
+          api-level: 31
+          build-tools-version: 31.0.0
+          cmake-version: 3.18.1
+
+      # 6. Gradle wrapper doğrulaması
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@v1
+
+      # 7. Android uygulamasını build et
+      - name: Build Android App
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew clean assembleRelease
+        env:
+          JAVA_HOME: /opt/hostedtoolcache/Java_Adopt_jdk/17.0.13-11/x64
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
+      # 8. APK dosyasını kaydet
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+
+  deploy:
+    name: Deploy to Google Play
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      # 1. Repository'yi klonla
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Google Play'e yükleme
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: com.devfast
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: internal
