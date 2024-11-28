@@ -49,33 +49,39 @@ jobs:
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release-key.keystore
 
-      # 7. Android uygulamasını build et ve imzala
-      - name: Build and Sign Android App
+      # 7. Android uygulamasını build et
+      - name: Build Release AAB
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew clean bundleRelease -Pandroid.injected.signing.store.file=app/release-key.keystore \
-                                        -Pandroid.injected.signing.store.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
-                                        -Pandroid.injected.signing.key.alias=${{ secrets.ANDROID_KEY_ALIAS }} \
-                                        -Pandroid.injected.signing.key.password=${{ secrets.ANDROID_KEY_PASSWORD }}
-        env:
-          JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
-          ANDROID_HOME: /usr/local/lib/android/sdk
-          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+          ./gradlew clean bundleRelease
 
-      # 8. AAB dosyasını kaydet
+      # 8. AAB dosyasını imzala
+      - name: Sign AAB
+        id: sign
+        uses: r0adkll/sign-android-release@v1
+        with:
+          releaseDirectory: app/build/outputs/bundle/release
+          signingKeyBase64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          alias: ${{ secrets.KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      # 9. AAB dosyasını kaydet
       - name: Upload AAB
-        uses: actions/upload-artifact@v3
+        id: uploadArtifact
+        uses: actions/upload-artifact@v1
         with:
           name: app-release.aab
-          path: android/app/build/outputs/bundle/release/app-release.aab
+          path: app/build/outputs/bundle/release/app-release.aab
 
-      # 9. AAB dosyasını Google Play'e gönder
-      - name: Deploy to Google Play
+      # 10. Google Play'e gönder
+      - name: Deploy to Play Store (BETA)
+        id: deploy
         uses: r0adkll/upload-google-play@v1
         with:
-          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-          packageName: com.devfast
-          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
-          track: internal
-          status: draft
+          serviceAccountJson: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: com.package
+          releaseFile: app/build/outputs/bundle/release/app-release.aab
+          track: beta
+          whatsNewDirectory: whatsnew/
