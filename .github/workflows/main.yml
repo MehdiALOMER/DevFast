@@ -51,17 +51,17 @@ jobs:
       # 5. Keystore Dosyasını Decode Et
       - name: Decode keystore file
         run: |
-          echo "PASTE_YOUR_BASE64_ENCODED_KEYSTORE_HERE" | base64 --decode > android/app/release-key.jks
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release-key.keystore
 
       # 7. Android uygulamasını build et
       - name: Build Android App
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew clean bundleRelease -Pandroid.injected.signing.store.file=app/my-release-key.keystore \
-                                        -Pandroid.injected.signing.store.password=your-keystore-password \
-                                        -Pandroid.injected.signing.key.alias=key0 \
-                                        -Pandroid.injected.signing.key.password=your-keystore-password
+          ./gradlew clean bundleRelease -Pandroid.injected.signing.store.file=app/release-key.keystore \
+                                        -Pandroid.injected.signing.store.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
+                                        -Pandroid.injected.signing.key.alias=${{ secrets.ANDROID_KEY_ALIAS }} \
+                                        -Pandroid.injected.signing.key.password=${{ secrets.ANDROID_KEY_PASSWORD }}
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
           ANDROID_HOME: /usr/local/lib/android/sdk
