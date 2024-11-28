@@ -1,66 +1,32 @@
-name: Android CI
+name: Deploy to Play Store
 
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
+      - main # Ana branch'a her push'ta çalışır
 
 jobs:
   build:
-    name: Build Android App
+    name: Build and Deploy
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Repository'yi klonla
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # 2. Node.js ortamını kur
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      # 3. Bağımlılıkları yükle
-      - name: Install dependencies
-        run: npm install
-
-      # 4. Java ortamını kur
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v3
         with:
-          distribution: 'adopt'
-          java-version: '17'  # Java 17 kullanılıyor
+          distribution: 'zulu'
+          java-version: '11'
 
-      # 5. Android SDK’yı hazırla
-      - name: Install Android SDK
-        uses: android-actions/setup-android@v2
+      - name: Build the app
+        run: ./gradlew bundleRelease # aab dosyasını üretir
+
+      - name: Upload to Play Store
+        uses: r0adkll/upload-google-play@v1
         with:
-          api-level: 31
-          build-tools-version: 31.0.0
-          cmake-version: 3.18.1
-
-      # 6. Gradle wrapper doğrulaması
-      - name: Validate Gradle wrapper
-        uses: gradle/wrapper-validation-action@v1
-
-      # 7. Android uygulamasını build et
-      - name: Build Android App
-        run: |
-          cd android
-          chmod +x gradlew  # İzinleri düzelt
-          ./gradlew assembleRelease
-        env:
-          JAVA_HOME: /opt/hostedtoolcache/Java_Adopt_jdk/17.0.13-11/x64
-          ANDROID_HOME: /usr/local/lib/android/sdk
-          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-
-      # 8. APK dosyasını kaydet
-      - name: Upload APK
-        uses: actions/upload-artifact@v3
-        with:
-          name: app-release.apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: "com.devfast" # Uygulama Package ID'si
+          releaseFiles: app/build/outputs/bundle/release/app-release.aab
+          track: internal # Track türü: 'internal', 'beta', 'production' seçebilirsin
