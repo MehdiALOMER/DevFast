@@ -1,32 +1,34 @@
-name: Deploy to Play Store
+name: Deploy to Google Play
 
 on:
   push:
     branches:
-      - main # Ana branch'a her push'ta çalışır
+      - main  # Deploy işlemini tetikleyecek branch'ı buraya yaz.
 
 jobs:
   build:
-    name: Build and Deploy
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '11'
+    - name: Setup JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '11'
 
-      - name: Build the app
-        run: ./gradlew bundleRelease # aab dosyasını üretir
+    - name: Download dependencies
+      run: ./gradlew dependencies
 
-      - name: Upload to Play Store
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-          packageName: "com.devfast" # Uygulama Package ID'si
-          releaseFiles: app/build/outputs/bundle/release/app-release.aab
-          track: internal # Track türü: 'internal', 'beta', 'production' seçebilirsin
+    - name: Build AAB file
+      run: ./gradlew bundleRelease
+
+    - name: Upload to Google Play
+      uses: r0adkll/upload-google-play@v1
+      with:
+        serviceAccountJson: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+        packageName: "com.devfast"  # Buraya uygulamanın paket adını yaz.
+        releaseFiles: app/build/outputs/bundle/release/app-release.aab
+        track: internal  # Hangi track'e yüklemek istediğini seç (internal, beta, production).
